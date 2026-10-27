@@ -94,7 +94,7 @@ pub struct LaunchArgs {
     #[arg(long, env = "DISPLAY_NAME")]
     pub display_name: Option<String>,
 
-    /// Boot volume size in GB [default: the image's, ~47].
+    /// Boot volume size in GB [default: Oracle's, 50].
     #[arg(long, env = "BOOT_VOLUME_GB", value_name = "GB")]
     pub boot_volume_gb: Option<u64>,
 

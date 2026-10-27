@@ -15,6 +15,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 FAILS = int(os.environ.get("MOCK_FAILS", "2"))
 REGION = "us-ashburn-1"
+HOME_REGION = os.environ.get("MOCK_HOME_REGION", REGION)
 ADS = [f"Abcd:US-ASHBURN-AD-{n}" for n in (1, 2, 3)]
 attempts = 0
 
@@ -31,7 +32,12 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = self.path.split("?")[0]
-        if path.endswith("/availabilityDomains"):
+        if path.endswith("/regionSubscriptions"):
+            self.reply(200, [
+                {"regionName": r, "isHomeRegion": r == HOME_REGION}
+                for r in sorted({REGION, HOME_REGION})
+            ])
+        elif path.endswith("/availabilityDomains"):
             self.reply(200, [{"name": ad} for ad in ADS])
         elif path.endswith("/subnets"):
             self.reply(200, [{

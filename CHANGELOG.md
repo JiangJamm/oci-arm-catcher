@@ -1,11 +1,16 @@
 # Changelog
 
-## Unreleased
+## 0.1.2 — 2026-10-27
 
 - The bash / PowerShell scripts, their helpers and tests moved to `legacy/`,
   with their own README. They still read the `.env` in the repo root. The old
   root layout is kept at the `scripts-final` tag.
 - README: one copyable block per install method.
+- `check` reports the tenancy's home region and `run` warns when the profile
+  points elsewhere: Always Free instances can only be created in the home
+  region. The 401 hint now mentions unsubscribed regions too.
+- README: home-region requirement, Oracle's idle-instance reclamation, the full
+  Always Free compute allowance; boot volume default is 50 GB.
 
 ## 0.1.1 — 2026-10-27
 

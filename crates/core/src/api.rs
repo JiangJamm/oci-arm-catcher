@@ -115,6 +115,17 @@ pub struct Image {
     pub display_name: Option<String>,
 }
 
+/// A region the tenancy is subscribed to.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RegionSubscription {
+    /// Region identifier, e.g. `eu-amsterdam-1`.
+    pub region_name: String,
+    /// True for the tenancy's home region — the only one where Always Free resources are free.
+    #[serde(default)]
+    pub is_home_region: bool,
+}
+
 impl Client {
     /// `LaunchInstance`. `retry_token` makes a retried request idempotent: OCI returns the
     /// instance from the first attempt instead of creating a second one.
@@ -136,6 +147,23 @@ impl Client {
                 encode(self.tenancy())
             ),
         )
+    }
+
+    /// `ListRegionSubscriptions` for the tenancy.
+    pub fn region_subscriptions(&self) -> Result<Vec<RegionSubscription>> {
+        self.get(
+            "identity",
+            &format!("{API}/tenancies/{}/regionSubscriptions", self.tenancy()),
+        )
+    }
+
+    /// The tenancy's home region, if OCI reports one.
+    pub fn home_region(&self) -> Result<Option<String>> {
+        Ok(self
+            .region_subscriptions()?
+            .into_iter()
+            .find(|r| r.is_home_region)
+            .map(|r| r.region_name))
     }
 
     /// `ListSubnets` in a compartment.
@@ -166,6 +194,18 @@ impl Client {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn region_subscriptions_deserialize() {
+        let regions: Vec<RegionSubscription> = serde_json::from_str(
+            r#"[{"regionKey":"AMS","regionName":"eu-amsterdam-1","status":"READY","isHomeRegion":true},
+                {"regionKey":"FRA","regionName":"eu-frankfurt-1","status":"READY"}]"#,
+        )
+        .unwrap();
+        assert!(regions[0].is_home_region);
+        assert_eq!(regions[0].region_name, "eu-amsterdam-1");
+        assert!(!regions[1].is_home_region);
+    }
 
     #[test]
     fn launch_details_serialize_to_oci_field_names() {
