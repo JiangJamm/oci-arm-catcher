@@ -1,6 +1,7 @@
 //! Terminal output and desktop notifications.
 
 use std::io::{IsTerminal as _, Write as _};
+use std::sync::OnceLock;
 use std::time::{Duration, Instant};
 
 use oci_arm_catcher_core::{Environment, Event, RetryReason, catcher};
@@ -33,8 +34,9 @@ impl Environment for Console {
                 number,
                 availability_domain,
             } => println!(
-                "{} Attempt #{number}  ({availability_domain})",
-                self.stamp()
+                "{} Attempt #{number}  {}",
+                dim(&self.stamp()),
+                dim(&format!("({availability_domain})"))
             ),
             Event::Retrying { error, reason, .. } => {
                 let label = match reason {
@@ -43,7 +45,13 @@ impl Environment for Console {
                     RetryReason::ServerError => "OCI server error",
                     RetryReason::Network => "network error, resending the same request",
                 };
-                println!("  -> {error}  [{label}]");
+                // "Code: message" -> code in red, so a new kind of error stands out.
+                let text = error.to_string();
+                let line = match text.split_once(": ") {
+                    Some((code, message)) => format!("{}: {message}", red(code)),
+                    None => red(&text),
+                };
+                println!("  -> {line}  {}", dim(&format!("[{label}]")));
             }
         }
     }
@@ -57,7 +65,11 @@ impl Environment for Console {
         let mut out = std::io::stdout();
         while let Some(left) = end.checked_duration_since(Instant::now()) {
             let s = left.as_secs();
-            let _ = write!(out, "\r  next attempt in {:02}:{:02} ", s / 60, s % 60);
+            let _ = write!(
+                out,
+                "\r  {}",
+                yellow(&format!("... next attempt in {:02}:{:02} ", s / 60, s % 60))
+            );
             let _ = out.flush();
             std::thread::sleep(left.min(Duration::from_secs(1)));
         }
@@ -68,6 +80,38 @@ impl Environment for Console {
     fn new_token(&mut self) -> String {
         catcher::random_token()
     }
+}
+
+/// ANSI styling only on a terminal, and never with `NO_COLOR` set (https://no-color.org).
+fn color() -> bool {
+    static ENABLED: OnceLock<bool> = OnceLock::new();
+    *ENABLED.get_or_init(|| {
+        std::io::stdout().is_terminal() && std::env::var_os("NO_COLOR").is_none_or(|v| v.is_empty())
+    })
+}
+
+fn paint(code: &str, text: &str) -> String {
+    if color() {
+        format!("\x1b[{code}m{text}\x1b[0m")
+    } else {
+        text.to_owned()
+    }
+}
+
+pub fn dim(text: &str) -> String {
+    paint("2", text)
+}
+
+pub fn red(text: &str) -> String {
+    paint("31", text)
+}
+
+pub fn yellow(text: &str) -> String {
+    paint("33", text)
+}
+
+pub fn green(text: &str) -> String {
+    paint("1;32", text)
 }
 
 /// Best-effort desktop notification; the terminal output is the record.

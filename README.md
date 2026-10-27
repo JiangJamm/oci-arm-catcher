@@ -8,7 +8,9 @@ your instance and pings you.
 Part of [DeepLab](https://deeplab.tools/products/) — small, sharp tools that run
 locally.
 
-![oci-arm-catcher in action](assets/demo.gif)
+![oci-arm-catcher in action: two "Out of host capacity" answers, then the instance is created](assets/demo.gif)
+
+<sub>Recorded against a local mock of the OCI API (`assets/demo/`) with a 5-second interval; the real default is 5 minutes.</sub>
 
 If you've ever tried to create a free Ampere A1 instance and hit this,
 repeatedly, for days:
@@ -132,6 +134,8 @@ oci-arm-catcher check
 ---
 
 ## Quick start
+
+![oci-arm-catcher discover printing ready-to-paste .env lines](assets/discover.gif)
 
 ```bash
 oci-arm-catcher discover > .env   # read-only: prints your OCIDs as .env lines
