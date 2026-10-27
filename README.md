@@ -2,8 +2,8 @@
 
 # oci-arm-catcher
 
-[![CI](https://github.com/deeplabua/oci-arm-catcher/actions/workflows/ci.yml/badge.svg)](https://github.com/deeplabua/oci-arm-catcher/actions/workflows/ci.yml)
-[![Crates.io](https://img.shields.io/crates/v/oci-arm-catcher.svg)](https://crates.io/crates/oci-arm-catcher)
+[![CI](https://img.shields.io/github/actions/workflow/status/deeplabua/oci-arm-catcher/ci.yml?branch=main&logo=github&label=CI)](https://github.com/deeplabua/oci-arm-catcher/actions/workflows/ci.yml)
+[![crates.io](https://img.shields.io/crates/v/oci-arm-catcher?label=crates.io&color=e37933)](https://crates.io/crates/oci-arm-catcher)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/deeplabua/oci-arm-catcher?style=flat&logo=github&label=Star)](https://github.com/deeplabua/oci-arm-catcher/stargazers)
 
