@@ -12,12 +12,11 @@
 #   - OCI CLI installed:  https://docs.oracle.com/iaas/Content/API/SDKDocs/cliinstall.htm
 #   - Config created:     oci setup config   (creates ~/.oci/config)
 #
-# Usage:
+# Usage (from the repo root):
 #   cp .env.example .env      # then fill in your values
-#   chmod +x oci-arm-catcher.sh
-#   ./oci-arm-catcher.sh
+#   ./legacy/oci-arm-catcher.sh
 #
-# See README.md for how to obtain each OCID.
+# See legacy/README.md. The Rust binary in the repo root replaces this script.
 
 set -euo pipefail
 
@@ -175,7 +174,11 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Allow an explicit config path:  ./oci-arm-catcher.sh /path/to/my.env
-ENV_FILE="${1:-${OCI_ARM_CATCHER_ENV:-$SCRIPT_DIR/.env}}"
+# Default: .env next to this script, else the one in the repo root (shared with
+# the Rust binary, and where it lived before the scripts moved to legacy/).
+DEFAULT_ENV="$SCRIPT_DIR/.env"
+[[ -f "$DEFAULT_ENV" ]] || DEFAULT_ENV="$SCRIPT_DIR/../.env"
+ENV_FILE="${1:-${OCI_ARM_CATCHER_ENV:-$DEFAULT_ENV}}"
 
 if [[ ! -f "$ENV_FILE" ]]; then
     echo "Error: config file not found: $ENV_FILE" >&2

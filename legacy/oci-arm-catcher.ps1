@@ -54,7 +54,11 @@ param(
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 if (-not $ConfigFile) {
-    $ConfigFile = if ($env:OCI_ARM_CATCHER_ENV) { $env:OCI_ARM_CATCHER_ENV } else { Join-Path $ScriptDir '.env' }
+    # Default: .env next to this script, else the one in the repo root (shared with
+    # the Rust binary, and where it lived before the scripts moved to legacy\).
+    $defaultEnv = Join-Path $ScriptDir '.env'
+    if (-not (Test-Path $defaultEnv)) { $defaultEnv = Join-Path (Split-Path -Parent $ScriptDir) '.env' }
+    $ConfigFile = if ($env:OCI_ARM_CATCHER_ENV) { $env:OCI_ARM_CATCHER_ENV } else { $defaultEnv }
 }
 
 if (-not (Test-Path $ConfigFile)) {

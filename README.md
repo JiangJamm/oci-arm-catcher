@@ -24,8 +24,9 @@ ServiceError:
 …this is for you. Start it, walk away, get a notification when your instance is
 up.
 
-> Works on **macOS, Linux, and Windows**. One Rust binary that talks to the OCI
-> API directly; the original bash / PowerShell scripts are still included.
+> Works on **macOS, Linux, and Windows**. One binary that talks to the OCI API
+> directly. Looking for the original bash / PowerShell scripts? They're in
+> [`legacy/`](legacy/).
 
 ---
 
@@ -55,8 +56,8 @@ your region has them.
 
 It's a single binary with no runtime dependencies — it signs OCI API requests
 itself with the key in your `~/.oci/config`, so there's no OCI CLI or Python to
-install. It's been used in production to catch a 4 OCPU / 24 GB A1 instance on a real account (under the
-pre-June-2026 limits).
+install. The original scripts have caught a 4 OCPU / 24 GB A1 instance on a
+real account (under the pre-June-2026 limits).
 
 ## Who it's for
 
@@ -87,32 +88,39 @@ After a network error the binary resends the *same* request with the same
 `opc-retry-token`, so if the launch actually went through and only the answer
 was lost, OCI hands back that instance instead of creating a second one.
 
-The classic scripts follow the same rules by matching error text, and append
-every failed attempt's raw output to `oci-arm-catcher-errors.log` (override
-with `ERROR_LOG`).
-
 ---
 
 ## Install
 
 One self-contained binary for macOS, Linux and Windows. It talks to the OCI API
-directly — **no OCI CLI and no Python needed**.
+directly — **no OCI CLI and no Python needed**. Pick one:
+
+**macOS / Linux — Homebrew**
 
 ```bash
-# macOS / Linux (Homebrew)
 brew install deeplabua/tap/oci-arm-catcher
+```
 
-# macOS / Linux (installer script)
+**macOS / Linux — installer script**
+
+```bash
 curl --proto '=https' --tlsv1.2 -LsSf https://github.com/deeplabua/oci-arm-catcher/releases/latest/download/oci-arm-catcher-installer.sh | sh
+```
 
-# Windows (PowerShell)
+**Windows — PowerShell**
+
+```powershell
 powershell -c "irm https://github.com/deeplabua/oci-arm-catcher/releases/latest/download/oci-arm-catcher-installer.ps1 | iex"
+```
 
-# From source
+**Any platform — from source** (needs [Rust](https://rustup.rs))
+
+```bash
 cargo install oci-arm-catcher
 ```
 
-Or grab an archive from [Releases](https://github.com/deeplabua/oci-arm-catcher/releases).
+Or download an archive for your platform from
+[Releases](https://github.com/deeplabua/oci-arm-catcher/releases).
 
 ## Prerequisites
 
@@ -147,25 +155,8 @@ That's it. It retries until capacity appears, launches the instance, prints its
 console link and sends a desktop notification. `oci-arm-catcher --help` lists
 every flag; each one can also be set in `.env` or as an environment variable.
 
-<details>
-<summary><b>Classic shell scripts</b> (bash / PowerShell + OCI CLI)</summary>
-
-The original scripts still work and read the same `.env`. They need the
-[OCI CLI](https://docs.oracle.com/iaas/Content/API/SDKDocs/cliinstall.htm)
-(`oci setup config`) and, for bash, Python 3.
-
-```bash
-git clone https://github.com/deeplabua/oci-arm-catcher.git
-cd oci-arm-catcher
-cp .env.example .env       # then edit .env
-./scripts/get-config.sh    # read-only OCID discovery
-./oci-arm-catcher.sh
-```
-
-On Windows: `Copy-Item .env.example .env`, then `.\scripts\get-config.ps1`
-and `.\oci-arm-catcher.ps1`.
-
-</details>
+Prefer the original bash / PowerShell scripts (OCI CLI + Python)? See
+[`legacy/README.md`](legacy/README.md).
 
 ---
 
@@ -186,30 +177,33 @@ availability domain(s), public subnets and the latest ARM image, formatted as
 
 ### Finding values manually
 
-| Variable | What it is | Command |
-|---|---|---|
-| `COMPARTMENT_ID` | Where the instance is created (tenancy root works) | `oci iam compartment list --all` |
-| `AVAILABILITY_DOMAIN` | The AD to launch in | `oci iam availability-domain list` |
-| `SUBNET_ID` | A public subnet in your VCN | `oci network subnet list --compartment-id <id> --all` |
-| `IMAGE_ID` | An **aarch64/ARM** OS image | `oci compute image list --compartment-id <id> --operating-system "Canonical Ubuntu" --shape VM.Standard.A1.Flex --all` |
-| `SSH_KEY_FILE` | Path to your SSH **public** key (`.pub`) | `ls ~/.ssh/*.pub` |
+If you'd rather look them up in the console: **compartment** — the tenancy OCID
+(profile menu → *Tenancy*); **availability domain** — *Compute → Instances →
+Create instance → Placement*; **subnet** — *Networking → Virtual cloud networks
+→ your VCN → Subnets*; **image** — an **aarch64** image from *Compute → Custom
+images / Platform images*; **SSH key** — your `~/.ssh/*.pub`.
 
 ### All settings
+
+Each setting can be a flag (`--retry-interval 120`), an environment variable or
+a line in `.env`.
 
 | Variable | Required | Default | Notes |
 |---|---|---|---|
 | `COMPARTMENT_ID` | yes | — | Compartment / tenancy OCID |
-| `DISPLAY_NAME` | yes | — | Instance name in the console |
-| `SSH_KEY_FILE` | yes | — | Path to your `.pub` key |
 | `AVAILABILITY_DOMAIN` | yes\* | — | Single AD |
 | `AVAILABILITY_DOMAINS` | yes\* | — | Comma-separated ADs to **rotate** across; overrides the single one |
 | `SUBNET_ID` | yes | — | Public subnet OCID |
 | `IMAGE_ID` | yes | — | ARM image OCID |
-| `OCPUS` | yes | `2` | Always Free max is 2 total (was 4 before 15 Jun 2026) |
-| `MEMORY_GB` | yes | `12` | Always Free max is 12 total (was 24 before 15 Jun 2026) |
+| `SSH_KEY_FILE` | yes | — | Path to your `.pub` key |
+| `OCPUS` | yes | — | Always Free max is 2 total (was 4 before 15 Jun 2026) |
+| `MEMORY_GB` | yes | — | Always Free max is 12 total (was 24 before 15 Jun 2026) |
+| `DISPLAY_NAME` | no | `arm-free-1` | Instance name in the console |
 | `RETRY_INTERVAL` | no | `300` | Seconds between attempts |
 | `BOOT_VOLUME_GB` | no | image default (~47) | Boot volume size; Always Free includes 200 GB block storage in total |
-| `ERROR_LOG` | no | `oci-arm-catcher-errors.log` | Where raw error output from each failed attempt is appended |
+| `MAX_ATTEMPTS` | no | unlimited | Give up after this many attempts |
+
+Credentials come from `~/.oci/config` (`--oci-config`, `--profile` to change).
 
 \* Set **either** `AVAILABILITY_DOMAIN` (one AD) **or** `AVAILABILITY_DOMAINS`
 (rotation). If both are set, the rotating list wins.
@@ -232,87 +226,60 @@ AVAILABILITY_DOMAINS="Abcd:US-ASHBURN-1-AD-1,Abcd:US-ASHBURN-1-AD-2,Abcd:US-ASHB
 
 You'll likely want this running for hours. Pick one:
 
-**nohup** — fire and forget, logs to a file:
-
-```bash
-nohup ./oci-arm-catcher.sh > catcher.log 2>&1 &
-tail -f catcher.log          # watch progress
-```
-
-**tmux / screen** — detachable session you can reattach to:
+**tmux / screen** — a session you can detach from and come back to:
 
 ```bash
 tmux new -s catcher
-./oci-arm-catcher.sh
+oci-arm-catcher
 # detach: Ctrl-b then d   ·   reattach: tmux attach -t catcher
 ```
 
-**Windows** — run in a PowerShell window, or as a background job:
+**nohup** — fire and forget, logs to a file:
 
-```powershell
-Start-Job -ScriptBlock { & "C:\path\to\oci-arm-catcher.ps1" }
+```bash
+nohup oci-arm-catcher > catcher.log 2>&1 &
+tail -f catcher.log
 ```
 
-The script prints a once-a-minute heartbeat when it detects it's writing to a
-log file (non-interactive), and a live countdown when run in a terminal.
+**Windows** — leave a PowerShell window open, or start it in the background:
 
----
+```powershell
+Start-Process oci-arm-catcher -RedirectStandardOutput catcher.log -WindowStyle Hidden
+```
 
-## Running on Windows
-
-Use the binary (see [Install](#install)) — it runs natively on Windows and
-shows a toast notification on success. The classic scripts work too:
-
-1. **Native PowerShell** — use `oci-arm-catcher.ps1` as shown
-   above. It shows Windows toast notifications (via
-   [BurntToast](https://github.com/Windos/BurntToast) if installed, otherwise a
-   tray balloon).
-2. **WSL2 or Git Bash** — if you'd rather use the bash version, run it inside
-   [WSL2](https://learn.microsoft.com/windows/wsl/install) or Git Bash exactly
-   as on Linux. You'll need `python3` available in that environment.
+In a terminal you get a live countdown; in a log file, one line per attempt.
 
 ---
 
 ## Troubleshooting
 
-**`'oci' is not installed or not on PATH`**
-The OCI CLI isn't installed or your shell can't find it. Re-run the install
-step, then `oci iam region list` to confirm. On macOS with Homebrew you may need
-to restart your terminal.
+**`oci-arm-catcher check` fails with `NotAuthenticated` (401)**
+The key or fingerprint in `~/.oci/config` doesn't match the API key uploaded in
+the console, or `key_file` points at the wrong file. Encrypted keys aren't
+supported yet — write an unencrypted copy with
+`openssl rsa -in key.pem -out key_nopass.pem` and point `key_file` at it.
 
 **It keeps printing `InternalError: Out of host capacity.`**
 That's expected — it's working. Capacity genuinely isn't available yet. Leave it
-running. Consider adding more Availability Domains, or try a different region's
-account if you have one.
+running. Consider adding more Availability Domains.
 
 **`NotAuthorizedOrNotFound` and it stops immediately**
 This is *not* a capacity error, so the catcher stops on purpose. Usually a wrong
-or mismatched OCID — double-check that `COMPARTMENT_ID`, `SUBNET_ID`, and
-`IMAGE_ID` all belong to the **same region** as your AD.
+or mismatched OCID — check that `COMPARTMENT_ID`, `SUBNET_ID` and `IMAGE_ID`
+all belong to the **same region** as your profile.
 
 **`LimitExceeded`**
 You've hit your Always Free allowance — **2 OCPU / 12 GB total** since 15 June
 2026 (it was 4 OCPU / 24 GB before). Delete or shrink existing A1 instances, or
-lower `OCPUS`/`MEMORY_GB`. This is not a capacity error, so the catcher stops
-instead of retrying.
-
-**It looks frozen — the spinner just keeps spinning**
-Older versions could appear to hang here. The OCI CLI's Python SDK has its own
-internal retry/backoff, independent of `--connection-timeout` / `--read-timeout`:
-after a `500` it can silently loop on `429 Too Many Requests` for minutes inside a
-single attempt, so `RETRY_INTERVAL` no longer reflects the real interval. The
-catcher now passes `--no-retry` and does its own retrying, which fixes this
-(thanks [@zearp](https://github.com/zearp), [#1](https://github.com/deeplabua/oci-arm-catcher/issues/1)).
-If you're on an older copy, `git pull`.
+lower `OCPUS` / `MEMORY_GB`. Not a capacity error, so the catcher stops.
 
 **The image won't boot / wrong architecture**
-Make sure `IMAGE_ID` is an **aarch64 / ARM** image. x86 images won't launch on
-`A1.Flex`. The `get-config` helper filters to ARM images for you.
+`IMAGE_ID` must be an **aarch64 / ARM** image; x86 images won't launch on
+`A1.Flex`. `discover` only lists ARM images.
 
 **Notifications don't show up**
-They're best-effort. On Linux install `libnotify` (`notify-send`); on Windows
-`Install-Module BurntToast` for nicer toasts. The script always prints to the
-console regardless.
+They're best-effort; the terminal output is always there. On Linux they need a
+running notification daemon (any desktop environment has one).
 
 ---
 
@@ -329,46 +296,15 @@ cargo fmt --all
 cargo run -- check          # read-only call against your own account
 ```
 
-The bash script is covered by [bats](https://github.com/bats-core/bats-core)
-tests that mock the `oci` CLI, and the PowerShell port by
-[Pester](https://pester.dev/). Both run in CI (plus
-[ShellCheck](https://www.shellcheck.net/)).
-
-Install the dev tools:
-
-```bash
-# macOS (Homebrew)
-brew install bats-core shellcheck
-
-# Debian / Ubuntu
-sudo apt-get install -y bats shellcheck
-
-# Pester (PowerShell, any OS) — usually preinstalled on Windows
-pwsh -c "Install-Module Pester -Scope CurrentUser -Force"
-```
-
-Run them:
-
-```bash
-# bash
-bats tests/
-
-# powershell
-Invoke-Pester -Path tests/oci-arm-catcher.Tests.ps1
-
-# lint
-shellcheck oci-arm-catcher.sh scripts/get-config.sh
-```
-
-For testability the bash script can be sourced in "library mode"
-(`OCI_ARM_CATCHER_LIB=1 source ./oci-arm-catcher.sh`), which defines its helper
-functions without running the main loop.
+The README GIFs are recorded with [VHS](https://github.com/charmbracelet/vhs)
+against a local mock of the OCI API: `vhs assets/demo/demo.tape`. Tests for the
+legacy scripts are described in [`legacy/README.md`](legacy/README.md#tests).
 
 ---
 
 ## Disclaimer
 
-This tool only calls the official OCI CLI on your behalf, on a polite retry
+This tool only calls the official OCI API with your own key, on a polite retry
 interval — it doesn't bypass any limits or do anything Oracle's own console
 doesn't. You're responsible for staying within your account's terms and free-tier
 limits. Provided as-is under the MIT License.

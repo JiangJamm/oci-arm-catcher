@@ -192,6 +192,16 @@ teardown() {
     [[ "$output" == *"config file not found"* ]]
 }
 
+@test "falls back to the .env in the repo root" {
+    copy="$TMP/repo"
+    mkdir -p "$copy/legacy"
+    cp "$SCRIPT" "$copy/legacy/"
+    cp "$ENV_FILE" "$copy/.env"
+    PATH="$BIN:$PATH" MOCK_MODE=success run bash "$copy/legacy/oci-arm-catcher.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"SUCCESS"* ]]
+}
+
 @test "fails when a required variable is empty" {
     bad="$TMP/bad.env"
     grep -v '^COMPARTMENT_ID' "$ENV_FILE" > "$bad"
