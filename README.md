@@ -122,6 +122,13 @@ cargo install oci-arm-catcher
 Or download an archive for your platform from
 [Releases](https://github.com/deeplabua/oci-arm-catcher/releases).
 
+**Updating.** Run the same install command again, or
+`brew upgrade deeplabua/tap/oci-arm-catcher`. You don't have to watch for
+releases: at most once a day the binary asks GitHub for the latest version and,
+if there is a newer one, prints a short notice (on stderr, so
+`discover > .env` stays clean). It's off in CI and when stderr isn't a
+terminal; set `OCI_ARM_CATCHER_NO_UPDATE_CHECK=1` to turn it off entirely.
+
 ## Prerequisites
 
 1. **An Oracle Cloud account** (Always Free is fine). Note your **home region**

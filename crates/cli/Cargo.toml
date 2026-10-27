@@ -18,8 +18,11 @@ path = "src/main.rs"
 [dependencies]
 anyhow.workspace = true
 clap.workspace = true
+dirs.workspace = true
 notify-rust.workspace = true
 oci-arm-catcher-core.workspace = true
+serde.workspace = true
+ureq.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true
