@@ -1,11 +1,18 @@
+<p align="center"><img src=".github/oci-arm-catcher-256.png" width="128" height="128" alt="oci-arm-catcher icon"></p>
+
 # oci-arm-catcher
+
+[![CI](https://img.shields.io/github/actions/workflow/status/deeplabua/oci-arm-catcher/ci.yml?branch=main&logo=github&label=CI)](https://github.com/deeplabua/oci-arm-catcher/actions/workflows/ci.yml)
+[![crates.io](https://img.shields.io/crates/v/oci-arm-catcher?label=crates.io&color=e37933)](https://crates.io/crates/oci-arm-catcher)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/deeplabua/oci-arm-catcher?style=flat&logo=github&label=Star)](https://github.com/deeplabua/oci-arm-catcher/stargazers)
 
 **Grab Oracle Cloud's free ARM capacity the moment it appears.** A single,
 dependency-free binary that retries `LaunchInstance` for the Always Free
 `VM.Standard.A1.Flex` shape until Oracle finally has capacity — then launches
 your instance and pings you.
 
-Part of [DeepLab](https://deeplab.tools/products/) — small, sharp tools that run
+Part of [DeepLab](https://deeplab.tools/products/oci-arm-catcher/) — small, sharp tools that run
 locally.
 
 ![oci-arm-catcher in action: two "Out of host capacity" answers, then the instance is created](assets/demo.gif)
