@@ -9,12 +9,17 @@ use crate::config::Profile;
 use crate::error::{ApiError, Error, Result};
 use crate::signer::{Request, Signer};
 
+/// Send every request to this base URL instead of `https://<service>.<region>.oraclecloud.com`.
+/// For tests and demos against a local mock; not for real use.
+pub const ENDPOINT_OVERRIDE_VAR: &str = "OCI_ARM_CATCHER_ENDPOINT";
+
 /// A signed connection to one region.
 pub struct Client {
     signer: Signer,
     region: String,
     tenancy: String,
     agent: ureq::Agent,
+    endpoint: Option<String>,
 }
 
 impl Client {
@@ -33,6 +38,10 @@ impl Client {
             region: profile.region.clone(),
             tenancy: profile.tenancy.clone(),
             agent,
+            endpoint: std::env::var(ENDPOINT_OVERRIDE_VAR)
+                .ok()
+                .filter(|v| !v.is_empty())
+                .map(|v| v.trim_end_matches('/').to_owned()),
         })
     }
 
@@ -75,8 +84,17 @@ impl Client {
         body: Option<&[u8]>,
         extra_headers: &[(&str, &str)],
     ) -> Result<T> {
-        let host = format!("{service}.{}.oraclecloud.com", self.region);
-        let url = format!("https://{host}{path_and_query}");
+        let (host, url) = match &self.endpoint {
+            Some(base) => {
+                let host = base.split_once("://").map_or(base.as_str(), |(_, h)| h);
+                (host.to_owned(), format!("{base}{path_and_query}"))
+            }
+            None => {
+                let host = format!("{service}.{}.oraclecloud.com", self.region);
+                let url = format!("https://{host}{path_and_query}");
+                (host, url)
+            }
+        };
         let date = httpdate::fmt_http_date(SystemTime::now());
         let signed = self.signer.sign(&Request {
             method,

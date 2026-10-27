@@ -46,12 +46,18 @@ fn catch(
     let plan = settings::plan(launch, env_file)?;
     let client = client(common)?;
 
-    println!("=== oci-arm-catcher {} ===", env!("CARGO_PKG_VERSION"));
+    println!(
+        "{}",
+        ui::dim(&format!(
+            "=== oci-arm-catcher {} ===",
+            env!("CARGO_PKG_VERSION")
+        ))
+    );
     if let Some(path) = env_path {
-        println!("Settings: {}", path.display());
+        println!("{}", ui::dim(&format!("Settings: {}", path.display())));
     }
     if common.profile != DEFAULT_PROFILE {
-        println!("Profile: {}", common.profile);
+        println!("{}", ui::dim(&format!("Profile: {}", common.profile)));
     }
     let d = &plan.details;
     println!(
@@ -63,7 +69,7 @@ fn catch(
     if let Some(gb) = d.source_details.boot_volume_size_in_gbs {
         println!("Boot volume: {gb} GB");
     }
-    println!(
+    let ads = format!(
         "Availability domain{}: {}",
         if plan.availability_domains.len() > 1 {
             "s (rotating)"
@@ -72,12 +78,16 @@ fn catch(
         },
         plan.availability_domains.join(", ")
     );
-    println!("Retry interval: {}s\n", plan.interval.as_secs());
+    println!("{}", ui::dim(&ads));
+    println!(
+        "{}\n",
+        ui::dim(&format!("Retry interval: {}s", plan.interval.as_secs()))
+    );
 
     match catcher::run(&client, &plan, &mut Console::new()) {
         Ok(instance) => {
             let message = format!("SUCCESS! Instance created: {}", instance.id);
-            println!("\n{message}");
+            println!("\n{}", ui::green(&format!("✓ {message}")));
             if let Some(state) = &instance.lifecycle_state {
                 println!("State: {state}");
             }
@@ -201,7 +211,8 @@ fn discover(args: &DiscoverArgs, common: &CommonArgs, env_file: &EnvFile) -> Res
     for key in ["id_ed25519.pub", "id_rsa.pub"] {
         let path = oci_arm_catcher_core::config::expand_home(&format!("~/.ssh/{key}"));
         if path.is_file() {
-            println!("SSH_KEY_FILE=\"{}\"", path.display());
+            // $HOME keeps the line portable; .env parsing expands it.
+            println!("SSH_KEY_FILE=\"$HOME/.ssh/{key}\"");
             break;
         }
     }
