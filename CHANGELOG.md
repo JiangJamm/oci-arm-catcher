@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.3 — 2026-10-27
+
+- Update notice: at most once a day the binary checks GitHub for a newer
+  release and prints how to upgrade (brew, installer or cargo), on stderr. It
+  never delays a command; off in CI, without a terminal, or with
+  `OCI_ARM_CATCHER_NO_UPDATE_CHECK=1`.
+
 ## 0.1.2 — 2026-10-27
 
 - The bash / PowerShell scripts, their helpers and tests moved to `legacy/`,

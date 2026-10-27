@@ -1,5 +1,7 @@
 //! The subcommands.
 
+use std::time::Duration;
+
 use anyhow::Result;
 use oci_arm_catcher_core::config::{DEFAULT_PROFILE, Profile};
 use oci_arm_catcher_core::{A1_FLEX, Client, Error, catcher};
@@ -8,12 +10,14 @@ use crate::args::{Args, Command, CommonArgs, DiscoverArgs, LaunchArgs};
 use crate::exit::UsageError;
 use crate::settings::{self, EnvFile};
 use crate::ui::{self, Console};
+use crate::update::UpdateCheck;
 
-pub fn run(args: &Args) -> Result<()> {
+pub fn run(args: &Args, update: &mut UpdateCheck) -> Result<()> {
     let (env_path, env_file) = settings::load_env_file(&args.common)?;
+    let env_path = env_path.as_deref();
     match &args.command {
-        None => catch(&args.launch, &args.common, &env_file, env_path.as_deref()),
-        Some(Command::Run(launch)) => catch(launch, &args.common, &env_file, env_path.as_deref()),
+        None => catch(&args.launch, &args.common, &env_file, env_path, update),
+        Some(Command::Run(launch)) => catch(launch, &args.common, &env_file, env_path, update),
         Some(Command::Check) => check(&args.common),
         Some(Command::Discover(discover)) => self::discover(discover, &args.common, &env_file),
     }
@@ -42,6 +46,7 @@ fn catch(
     common: &CommonArgs,
     env_file: &EnvFile,
     env_path: Option<&std::path::Path>,
+    update: &mut UpdateCheck,
 ) -> Result<()> {
     let plan = settings::plan(launch, env_file)?;
     let client = client(common)?;
@@ -89,6 +94,8 @@ fn catch(
         "{}\n",
         ui::dim(&format!("Retry interval: {}s", plan.interval.as_secs()))
     );
+    // A hunt can run for days; say it now rather than when it ends.
+    update.report(Duration::from_millis(1500));
 
     match catcher::run(&client, &plan, &mut Console::new()) {
         Ok(instance) => {
