@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- The bash / PowerShell scripts, their helpers and tests moved to `legacy/`,
+  with their own README. They still read the `.env` in the repo root. The old
+  root layout is kept at the `scripts-final` tag.
+- README: one copyable block per install method.
+
 ## 0.1.1 — 2026-10-27
 
 - Colour output on terminals: dim headers, red error codes, yellow countdown,
