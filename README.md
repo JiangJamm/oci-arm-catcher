@@ -124,16 +124,20 @@ Or download an archive for your platform from
 
 ## Prerequisites
 
-1. **An Oracle Cloud account** (Always Free is fine) and a region picked.
-2. **A VCN with a public subnet** in that region. The OCI console's "Create
+1. **An Oracle Cloud account** (Always Free is fine). Note your **home region**
+   — the one picked at sign-up. Always Free instances can **only** be created
+   there.
+2. **A VCN with a public subnet** in your home region. The OCI console's "Create
    VCN with Internet Connectivity" wizard sets this up in one click.
 3. **An API key in `~/.oci/config`.** In the console: profile menu → *My
    profile* → *API keys* → *Add API key* → *Generate API key pair*. Download
    the private key, then paste the "Configuration file preview" it shows into
    `~/.oci/config` and point `key_file` at the downloaded key. (If you already
-   ran `oci setup config`, you're done.)
+   ran `oci setup config`, you're done.) `region` there must be your home
+   region.
 
-Check it works — this is read-only:
+Check it works — this is read-only, and it warns if `region` isn't your home
+region:
 
 ```bash
 oci-arm-catcher check
@@ -200,7 +204,7 @@ a line in `.env`.
 | `MEMORY_GB` | yes | — | Always Free max is 12 total (was 24 before 15 Jun 2026) |
 | `DISPLAY_NAME` | no | `arm-free-1` | Instance name in the console |
 | `RETRY_INTERVAL` | no | `300` | Seconds between attempts |
-| `BOOT_VOLUME_GB` | no | image default (~47) | Boot volume size; Always Free includes 200 GB block storage in total |
+| `BOOT_VOLUME_GB` | no | 50 (Oracle's default) | Boot volume size; the 200 GB Always Free block storage is shared by all boot and block volumes |
 | `MAX_ATTEMPTS` | no | unlimited | Give up after this many attempts |
 
 Credentials come from `~/.oci/config` (`--oci-config`, `--profile` to change).
@@ -219,6 +223,20 @@ AVAILABILITY_DOMAINS="Abcd:US-ASHBURN-1-AD-1,Abcd:US-ASHBURN-1-AD-2,Abcd:US-ASHB
 ```
 
 (Most single-AD regions just use `AVAILABILITY_DOMAIN`.)
+
+---
+
+## Keeping your instance
+
+Oracle [may reclaim](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm)
+an Always Free instance it considers idle: over 7 days, CPU (95th percentile),
+network **and** memory utilisation all below 20%. After a long hunt, put the
+server to real use — a sleeping instance can be taken back.
+
+The full Always Free compute allowance, for reference: **A1.Flex — 2 OCPU and
+12 GB in total** (one instance, or two smaller ones), plus up to two
+**E2.1.Micro** (1/8 OCPU, 1 GB) instances, and **200 GB** of block storage
+shared by all boot and block volumes. All in your home region.
 
 ---
 
@@ -255,7 +273,8 @@ In a terminal you get a live countdown; in a log file, one line per attempt.
 
 **`oci-arm-catcher check` fails with `NotAuthenticated` (401)**
 The key or fingerprint in `~/.oci/config` doesn't match the API key uploaded in
-the console, or `key_file` points at the wrong file. Encrypted keys aren't
+the console, or `key_file` points at the wrong file. OCI also answers 401 when
+`region` is one your tenancy isn't subscribed to — set it to your home region. Encrypted keys aren't
 supported yet — write an unencrypted copy with
 `openssl rsa -in key.pem -out key_nopass.pem` and point `key_file` at it.
 

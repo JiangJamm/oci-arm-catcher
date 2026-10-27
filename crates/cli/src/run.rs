@@ -1,6 +1,6 @@
 //! The subcommands.
 
-use anyhow::{Context as _, Result};
+use anyhow::Result;
 use oci_arm_catcher_core::config::{DEFAULT_PROFILE, Profile};
 use oci_arm_catcher_core::{A1_FLEX, Client, Error, catcher};
 
@@ -79,6 +79,12 @@ fn catch(
         plan.availability_domains.join(", ")
     );
     println!("{}", ui::dim(&ads));
+    // Best effort: a policy that hides region subscriptions must not stop the hunt.
+    if let Ok(Some(home)) = client.home_region()
+        && home != client.region()
+    {
+        println!("{}", ui::yellow(&not_home_region(client.region(), &home)));
+    }
     println!(
         "{}\n",
         ui::dim(&format!("Retry interval: {}s", plan.interval.as_secs()))
@@ -120,8 +126,9 @@ fn hint_for(error: &Error) -> Option<&'static str> {
              Lower OCPUS / MEMORY_GB or remove existing A1 instances."
         }
         (401, _) => {
-            "Authentication failed. Run `oci-arm-catcher check`, and make sure the key's \
-             fingerprint in ~/.oci/config matches the API key uploaded in the console."
+            "Authentication failed. Make sure the key's fingerprint in ~/.oci/config matches \
+             the API key uploaded in the console, and that `region` is a region your tenancy \
+             is subscribed to (normally your home region) — OCI answers 401 for any other."
         }
         (404, _) => {
             "An OCID was not found or you lack access. Check that COMPARTMENT_ID, SUBNET_ID and \
@@ -135,16 +142,36 @@ fn check(common: &CommonArgs) -> Result<()> {
     let client = client(common)?;
     let ads = client
         .availability_domains()
-        .context("signed request to OCI failed")?;
+        .map_err(|error| match &error {
+            Error::Api(api) if api.status == 401 => {
+                anyhow::anyhow!("{error}\n\nhint: {}", hint_for(&error).unwrap_or_default())
+            }
+            _ => anyhow::Error::from(error).context("signed request to OCI failed"),
+        })?;
     println!(
         "OK: authenticated to {} as tenancy {}",
         client.region(),
         client.tenancy()
     );
+    match client.home_region().ok().flatten() {
+        Some(home) if home == client.region() => {
+            println!("  home region: {home} (Always Free applies here)")
+        }
+        Some(home) => println!("{}", ui::yellow(&not_home_region(client.region(), &home))),
+        None => {}
+    }
     for ad in ads {
         println!("  availability domain: {}", ad.name);
     }
     Ok(())
+}
+
+/// Always Free instances can only be created in the tenancy's home region.
+fn not_home_region(region: &str, home: &str) -> String {
+    format!(
+        "warning: {region} is not your home region ({home}). Always Free instances can only be \
+         created in the home region; set region={home} in ~/.oci/config or pick another --profile."
+    )
 }
 
 fn discover(args: &DiscoverArgs, common: &CommonArgs, env_file: &EnvFile) -> Result<()> {
